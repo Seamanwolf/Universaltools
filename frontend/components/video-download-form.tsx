@@ -12,25 +12,42 @@ import { useAuth } from '@/contexts/AuthContext';
 export const VideoDownloadForm: React.FC = () => {
   const [url, setUrl] = useState('');
   const [format, setFormat] = useState('mp4');
-  const [resolution, setResolution] = useState('720p');
+  const [resolution, setResolution] = useState('480p');
   const [loading, setLoading] = useState(false);
   const [platform, setPlatform] = useState('youtube');
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const formatOptions = [
     { value: 'mp4', label: 'MP4 (видео)' },
     { value: 'mp3', label: 'MP3 (только аудио)' }
   ];
 
-  const resolutionOptions = [
-    { value: '360p', label: '360p' },
-    { value: '480p', label: '480p' },
-    { value: '720p', label: '720p' },
-    { value: '1080p', label: '1080p (HD)' },
-    { value: '1440p', label: '1440p (2K)' },
-    { value: '2160p', label: '2160p (4K)' }
-  ];
+  const getResolutionOptions = () => {
+    if (!isAuthenticated()) {
+      return [
+        { value: '240p', label: '240p' },
+        { value: '360p', label: '360p' },
+        { value: '480p', label: '480p' },
+      ];
+    }
+    
+    return [
+      { value: '240p', label: '240p' },
+      { value: '360p', label: '360p' },
+      { value: '480p', label: '480p' },
+      { value: '720p', label: '720p (HD)' },
+      { value: '1080p', label: '1080p (HD)' },
+      { value: '1440p', label: '1440p (2K)' },
+      { value: '2160p', label: '2160p (4K)' }
+    ];
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated() && ['720p', '1080p', '1440p', '2160p'].includes(resolution)) {
+      setResolution('480p');
+    }
+  }, [isAuthenticated, resolution]);
 
   const platformOptions = [
     { value: 'youtube', label: 'YouTube' },
@@ -78,38 +95,39 @@ export const VideoDownloadForm: React.FC = () => {
     try {
       setLoading(true);
       
-      // Формируем данные запроса
       const downloadData = {
         url,
+        format: format === 'mp3' ? 'audio' : 'video',
+        quality: format === 'mp3' ? 'high' : resolution.replace('p', ''),
         platform,
-        format_options: {
-          format: format === 'mp3' ? 'audio_only' : format,
-          resolution: format === 'mp3' ? 'audio_only' : resolution,
-        },
         save_history: isAuthenticated()
       };
       
       console.log('Отправляем запрос на загрузку:', downloadData);
       
-      // Отправляем запрос на сервер
       const response = await fetch('/api/v1/downloads', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(isAuthenticated() && localStorage.getItem('token') 
+              ? { 'Authorization': `Bearer ${localStorage.getItem('token')}` } 
+              : {})
         },
         body: JSON.stringify(downloadData),
       });
       
+      const responseData = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Ошибка при загрузке видео');
+        console.error('Ошибка от сервера:', responseData);
+        throw new Error(responseData.message || 'Произошла ошибка при обработке запроса');
       }
       
-      const data = await response.json();
+      console.log('Успешный ответ:', responseData);
       
       toast({
         title: 'Успешно',
-        description: 'Видео поставлено в очередь на загрузку',
+        description: responseData.message || 'Видео поставлено в очередь на загрузку',
         variant: 'success',
       });
       
@@ -167,7 +185,7 @@ export const VideoDownloadForm: React.FC = () => {
             <CustomSelect
               value={resolution}
               onValueChange={setResolution}
-              options={resolutionOptions}
+              options={getResolutionOptions()}
               className="w-full"
             />
           </div>
@@ -186,7 +204,8 @@ export const VideoDownloadForm: React.FC = () => {
       
       {!isAuthenticated() && (
         <p className="text-xs text-gray-500 mt-2">
-          Примечание: История загрузок сохраняется только для авторизованных пользователей.
+          Примечание: Для неавторизованных пользователей максимальное разрешение - 480p. 
+          <br />История загрузок сохраняется только для авторизованных пользователей.
         </p>
       )}
     </form>
