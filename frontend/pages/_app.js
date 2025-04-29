@@ -1,0 +1,1 @@
+import { AuthProvider } from "../contexts/AuthContext"; import React from "react"; import "../styles/globals.css"; import { ConfigProvider } from "antd"; import ruRU from "antd/locale/ru_RU"; function MyApp({ Component, pageProps }) { return ( <ConfigProvider locale={ruRU}> <AuthProvider> <Component {...pageProps} /> </AuthProvider> </ConfigProvider> ); } export default MyApp;

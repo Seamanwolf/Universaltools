@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - mariadb
+      - redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - uploads:/var/www/youtube-downloader/uploads
+      - browser_cookies:/root/.config/chromium # для доступа к cookies для TikTok/Instagram
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_HOST=mariadb
+      - REDIS_HOST=redis
+      - UKASSA_MERCHANT_ID=${UKASSA_MERCHANT_ID:-}
+      - UKASSA_SECRET_KEY=${UKASSA_SECRET_KEY:-}
+      - STRIPE_API_KEY=${STRIPE_API_KEY:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - INSTAGRAM_USERNAME=${INSTAGRAM_USERNAME:-}
+      - INSTAGRAM_PASSWORD=${INSTAGRAM_PASSWORD:-}
+      - CORS_ORIGINS=https://universaltools.pro
+      - FRONTEND_URL=https://universaltools.pro
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=/api/v1
+      - NEXT_PUBLIC_STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY:-}
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+
+  mariadb:
+    image: mariadb:10.11
+    restart: always
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=youtubedb
+      - MYSQL_USER=youtubeadmin
+      - MYSQL_PASSWORD=youtubepass
+
+  redis:
+    image: redis:7.2-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/certbot/www:/var/www/certbot
+      - uploads:/var/www/youtube-downloader/uploads
+
+  # Служба для запуска фоновых задач (Celery worker)
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - backend
+      - redis
+    volumes:
+      - ./backend:/app
+      - uploads:/var/www/youtube-downloader/uploads
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_HOST=mariadb
+      - REDIS_HOST=redis
+      - C_FORCE_ROOT=true
+    command: celery -A app.worker.celery worker --loglevel=info
+
+  # Служба для запуска периодических задач (Celery beat)
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - backend
+      - redis
+      - celery
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    environment:
+      - DB_HOST=mariadb
+      - REDIS_HOST=redis
+      - C_FORCE_ROOT=true
+    command: celery -A app.worker.celery beat --loglevel=info
+
+volumes:
+  mariadb_data:
+  redis_data:
+  uploads:
+  browser_cookies: 

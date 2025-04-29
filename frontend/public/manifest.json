@@ -1,0 +1,16 @@
+{
+  "name": "UniversalTools.pro",
+  "short_name": "UniversalTools",
+  "description": "Многофункциональный сервис для работы с файлами",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1890FF",
+  "icons": [
+    {
+      "src": "/icons/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+} 

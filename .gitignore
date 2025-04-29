@@ -1,0 +1,74 @@
+# Игнорировать служебные директории и файлы Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Игнорировать виртуальную среду
+venv/
+ENV/
+env/
+
+# Игнорировать локальные настройки и конфиги
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Игнорировать кэш и логи
+*.log
+*.pot
+*.pyc
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Игнорировать директории Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnp/
+.pnp.js
+
+# Игнорировать директории и файлы сборки Next.js
+.next/
+out/
+.vercel
+.turbo
+
+# Игнорировать директории и файлы IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Игнорировать файлы бэкапов
+backups/
+
+# Игнорировать директории и файлы Docker 
+.docker/
+docker-compose.override.yml
+
+# Игнорировать файлы с конфиденциальными данными
+*secret*
+*keys* 
