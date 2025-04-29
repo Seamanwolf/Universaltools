@@ -6,6 +6,7 @@ import { InboxOutlined, FilePdfOutlined, ScissorOutlined, CompressOutlined, Swap
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import dynamic from 'next/dynamic';
 import ClientOnly from '@/components/ClientOnly';
+import Head from 'next/head';
 
 const NavBar = dynamic(() => import('@/components/NavBar'), { ssr: false });
 
@@ -193,6 +194,10 @@ const PdfPage = () => {
 
   return (
     <>
+      <Head>
+        <title>PDF Инструменты | UniversalTools</title>
+        <link rel="icon" href="/icons/favicon.svg" />
+      </Head>
       <ClientOnly>
         <NavBar />
       </ClientOnly>

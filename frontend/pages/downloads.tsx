@@ -20,9 +20,13 @@ import {
   PauseCircleOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  LoginOutlined
 } from '@ant-design/icons';
 import NavBar from '@/components/NavBar';
+import { VideoDownloadForm } from '@/components/video-download-form';
+import { useAuth } from '@/contexts/AuthContext';
+import Head from 'next/head';
 
 const { Title, Paragraph } = Typography;
 
@@ -43,10 +47,16 @@ export default function DownloadsPage() {
   const [downloads, setDownloads] = useState<Download[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    fetchDownloads();
-  }, []);
+    // Загружаем историю только если пользователь аутентифицирован
+    if (isAuthenticated() && user) {
+      fetchDownloads();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated, user]);
 
   const fetchDownloads = async () => {
     try {
@@ -255,42 +265,72 @@ export default function DownloadsPage() {
 
   return (
     <>
+      <Head>
+        <title>Мои загрузки | UniversalTools</title>
+        <link rel="icon" href="/icons/favicon.svg" />
+      </Head>
       <NavBar />
       <div className="flex min-h-screen flex-col items-center">
         <div className="container mx-auto px-4 py-8">
           <Title level={2}>Мои загрузки</Title>
-          <Paragraph className="mb-6">
-            Здесь отображаются все ваши загрузки. Вы можете скачать готовые файлы или проверить статус текущих загрузок.
-          </Paragraph>
           
-          <Card>
-            {loading ? (
-              <div className="flex justify-center items-center py-12">
-                <Spin size="large" />
-              </div>
-            ) : error ? (
-              <div className="py-12">
-                <Empty
-                  description={
-                    <span className="text-red-500">{error}</span>
-                  }
-                />
-              </div>
-            ) : downloads.length === 0 ? (
-              <Empty description="У вас пока нет загрузок" />
-            ) : (
-              <Table 
-                dataSource={downloads} 
-                columns={columns} 
-                rowKey="id"
-                pagination={{ 
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  pageSizeOptions: ['10', '20', '50'],
-                }}
-              />
-            )}
+          {/* Форма загрузки видео для всех пользователей */}
+          <Card className="mb-6">
+            <Title level={4} className="mb-4">Скачать видео</Title>
+            <VideoDownloadForm />
           </Card>
+          
+          {/* История загрузок только для авторизованных пользователей */}
+          {isAuthenticated() ? (
+            <Card className="mt-6">
+              <Title level={4} className="mb-4">История загрузок</Title>
+              <Paragraph className="mb-6">
+                Здесь отображаются все ваши загрузки. Вы можете скачать готовые файлы или проверить статус текущих загрузок.
+              </Paragraph>
+              
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Spin size="large" />
+                </div>
+              ) : error ? (
+                <div className="py-12">
+                  <Empty
+                    description={
+                      <span className="text-red-500">{error}</span>
+                    }
+                  />
+                </div>
+              ) : downloads.length === 0 ? (
+                <Empty description="У вас пока нет загрузок" />
+              ) : (
+                <Table 
+                  dataSource={downloads} 
+                  columns={columns} 
+                  rowKey="id"
+                  pagination={{ 
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50'],
+                  }}
+                />
+              )}
+            </Card>
+          ) : (
+            <Card className="mt-6 text-center">
+              <Title level={4} className="mb-4">История загрузок</Title>
+              <Paragraph>
+                Для просмотра истории загрузок и сохранения ваших скачанных файлов, пожалуйста, авторизуйтесь.
+              </Paragraph>
+              <Button 
+                type="primary" 
+                icon={<LoginOutlined />}
+                onClick={() => window.location.href = '/login'}
+                className="mt-4"
+              >
+                Войти в аккаунт
+              </Button>
+            </Card>
+          )}
           
           <Card className="mt-8 bg-gray-50">
             <Title level={4} className="mb-4">Управление загрузками</Title>

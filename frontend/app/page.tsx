@@ -9,11 +9,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/AuthModal';
 // Добавляем стили для анимаций
 import styles from './page.module.css';
+import Head from 'next/head';
+import { Card, Typography } from 'antd';
+
+// Динамически импортируем VideoDownloadForm
+const VideoDownloadForm = dynamic(() => import('@/components/video-download-form').then(mod => mod.VideoDownloadForm), 
+  { ssr: false }
+);
 
 // Импортируем компоненты с использованием dynamic для предотвращения ошибок SSR
 const NavBar = dynamic(() => import('@/components/NavBar'), 
   { ssr: false }
 );
+
+const { Title } = Typography;
 
 // Типизированный компонент-обертка для клиентских компонентов
 interface ClientOnlyProps {
@@ -52,6 +61,7 @@ export default function Home() {
   const [authModalVisible, setAuthModalVisible] = useState(false);
   const [authInitialTab, setAuthInitialTab] = useState('login');
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showDownloader, setShowDownloader] = useState(false);
   
   useEffect(() => {
     setIsLoaded(true);
@@ -71,8 +81,16 @@ export default function Home() {
     setAuthModalVisible(false);
   };
   
+  const toggleDownloader = () => {
+    setShowDownloader(!showDownloader);
+  };
+  
   return (
     <>
+      <Head>
+        <title>UniversalTools - Инструменты для работы с медиа</title>
+        <link rel="icon" href="/icons/favicon.svg" />
+      </Head>
       <ClientOnly>
         <NavBar />
       </ClientOnly>
@@ -100,11 +118,12 @@ export default function Home() {
                 >
                   Зарегистрироваться бесплатно
                 </Button>
-                <Link href="/downloads">
-                  <Button className="bg-transparent border-2 border-white hover:bg-white hover:text-blue-600 px-8 py-3 text-lg font-semibold rounded-lg transition-all hover:shadow-lg">
-                    Начать загрузку
-                  </Button>
-                </Link>
+                <Button 
+                  className="bg-transparent border-2 border-white hover:bg-white hover:text-blue-600 px-8 py-3 text-lg font-semibold rounded-lg transition-all hover:shadow-lg"
+                  onClick={toggleDownloader}
+                >
+                  {showDownloader ? 'Скрыть форму' : 'Начать загрузку'}
+                </Button>
               </div>
             )}
             {isAuthenticated() && (
@@ -114,6 +133,18 @@ export default function Home() {
                     Перейти к инструментам
                   </Button>
                 </Link>
+              </div>
+            )}
+            
+            {/* Форма загрузки видео */}
+            {showDownloader && (
+              <div className={`mt-8 max-w-2xl mx-auto ${styles.fadeIn}`}>
+                <Card className="text-left">
+                  <Title level={4} className="mb-4 text-gray-800">Скачать видео</Title>
+                  <ClientOnly>
+                    <VideoDownloadForm />
+                  </ClientOnly>
+                </Card>
               </div>
             )}
           </div>

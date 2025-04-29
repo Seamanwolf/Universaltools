@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const VideoDownloadForm: React.FC = () => {
   const [url, setUrl] = useState('');
@@ -15,6 +16,7 @@ export const VideoDownloadForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [platform, setPlatform] = useState('youtube');
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
   const formatOptions = [
     { value: 'mp4', label: 'MP4 (видео)' },
@@ -76,18 +78,26 @@ export const VideoDownloadForm: React.FC = () => {
     try {
       setLoading(true);
       
-      // Здесь будет логика отправки запроса на сервер
+      // Формируем данные запроса
+      const downloadData = {
+        url,
+        platform,
+        format_options: {
+          format: format === 'mp3' ? 'audio_only' : format,
+          resolution: format === 'mp3' ? 'audio_only' : resolution,
+        },
+        save_history: isAuthenticated()
+      };
+      
+      console.log('Отправляем запрос на загрузку:', downloadData);
+      
+      // Отправляем запрос на сервер
       const response = await fetch('/api/v1/downloads', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          url,
-          format: format === 'mp3' ? 'audio_only' : format,
-          resolution: format === 'mp3' ? 'audio_only' : resolution,
-          platform
-        }),
+        body: JSON.stringify(downloadData),
       });
       
       if (!response.ok) {
@@ -171,6 +181,12 @@ export const VideoDownloadForm: React.FC = () => {
       {platform === 'instagram' && (
         <p className="text-xs text-gray-500 mt-2">
           Примечание: Для загрузки из Instagram требуется вход в аккаунт.
+        </p>
+      )}
+      
+      {!isAuthenticated() && (
+        <p className="text-xs text-gray-500 mt-2">
+          Примечание: История загрузок сохраняется только для авторизованных пользователей.
         </p>
       )}
     </form>
